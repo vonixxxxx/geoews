@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geoews"
-version = "0.1.0"
-description = "Information-geometric early warning signals (KL rate and geodesic acceleration)."
+version = "0.1.1"
+description = "Information-geometric early warning signals: KL rate, Fisher–Rao geometry, geodesic acceleration."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-  { name = "geoews contributors" }
+  { name = "Alexander Sokol" }
 ]
 keywords = ["early warning signals", "information geometry", "fisher-rao", "kl divergence"]
 classifiers = [

@@ -4,7 +4,7 @@ from .benchmarks import variance_ews, acf_ews
 from .datasets import load_ngrip, load_peter_lake
 from .plot import plot_ews
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Alexander Sokol"
 
 __all__ = [
