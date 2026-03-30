@@ -49,6 +49,9 @@ def kl_divergence_rate(mus: np.ndarray, sigmas: np.ndarray) -> np.ndarray:
     return np.maximum(kl, 0.0)
 
 
+kl_rate = kl_divergence_rate
+
+
 def _rolling_sum(arr: np.ndarray, window: int) -> np.ndarray:
     """Efficient rolling sum using cumulative sum."""
     t_len = len(arr)

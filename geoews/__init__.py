@@ -1,19 +1,20 @@
-"""geoews: information-geometric early warning signals."""
+from .manifold import ManifoldEWS, EWSResult
+from .indicators import kl_rate, geodesic_acceleration
+from .benchmarks import variance_ews, acf_ews
+from .datasets import load_ngrip, load_peter_lake
+from .plot import plot_ews
 
-from .indicators import geodesic_acceleration, kl_divergence_rate
-from .manifold import (
-    fisher_rao_distance_multivariate,
-    fisher_rao_distance_univariate,
-    step_distances,
-)
-from .windows import COVARIANCE_REGULARIZATION, estimate_gaussian_params
+__version__ = "0.1.0"
+__author__ = "Alexander Sokol"
 
 __all__ = [
-    "COVARIANCE_REGULARIZATION",
-    "estimate_gaussian_params",
-    "fisher_rao_distance_univariate",
-    "fisher_rao_distance_multivariate",
-    "step_distances",
-    "kl_divergence_rate",
+    "ManifoldEWS",
+    "EWSResult",
+    "kl_rate",
     "geodesic_acceleration",
+    "variance_ews",
+    "acf_ews",
+    "load_ngrip",
+    "load_peter_lake",
+    "plot_ews",
 ]

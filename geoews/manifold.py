@@ -1,6 +1,8 @@
-"""Fisher-Rao distances used by geoews indicators."""
+"""Fisher-Rao distances and high-level ManifoldEWS API."""
 
 from __future__ import annotations
+
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -61,3 +63,84 @@ fisher_rao_distance_univariate = _fisher_rao_distance_univariate
 fisher_rao_distance_multivariate = _fisher_rao_distance_multivariate
 step_distances = _step_distances
 
+
+@dataclass
+class EWSResult:
+    """Detection output from :meth:`ManifoldEWS.detect`."""
+
+    warning_index: int | None
+    threshold: float
+    times: np.ndarray
+    kl_rate: np.ndarray
+    geodesic_acceleration: np.ndarray
+    triggered: bool
+
+
+class ManifoldEWS:
+    """
+    Sliding-window Gaussian fit plus KL-rate / geodesic-acceleration indicators.
+
+    Uses :func:`geoews.windows.estimate_gaussian_params` and canonical formulas
+    from :mod:`geoews.indicators`.
+    """
+
+    def __init__(
+        self,
+        window: int = 50,
+        *,
+        step: int = 1,
+        cumul_window: int = 30,
+        baseline_fraction: float = 0.3,
+        threshold_percentile: float = 95.0,
+        regularization: float | None = None,
+    ) -> None:
+        self.window = int(window)
+        self.step = int(step)
+        self.cumul_window = int(cumul_window)
+        self.baseline_fraction = float(baseline_fraction)
+        self.threshold_percentile = float(threshold_percentile)
+        self.regularization = regularization
+
+        self._times: np.ndarray | None = None
+        self._mus: np.ndarray | None = None
+        self._sigmas: np.ndarray | None = None
+
+    def fit(self, x: np.ndarray, /) -> ManifoldEWS:
+        from .windows import estimate_gaussian_params
+
+        self._times, self._mus, self._sigmas = estimate_gaussian_params(
+            np.asarray(x, dtype=float),
+            window_size=self.window,
+            step=self.step,
+            regularization=self.regularization,
+        )
+        return self
+
+    def detect(self) -> EWSResult:
+        from .alerts import first_crossing, percentile_threshold
+        from .indicators import geodesic_acceleration, kl_divergence_rate
+
+        if self._times is None or self._mus is None or self._sigmas is None:
+            raise RuntimeError("Call fit(x) before detect().")
+
+        times = self._times
+        mus = self._mus
+        sigmas = self._sigmas
+
+        kl = kl_divergence_rate(mus, sigmas)
+        ga = geodesic_acceleration(mus, sigmas, cumul_window=self.cumul_window)
+
+        n = len(kl)
+        bl_end = max(5, int(self.baseline_fraction * n))
+        threshold = percentile_threshold(kl, bl_end, self.threshold_percentile)
+        warning_index = first_crossing(kl, threshold)
+        triggered = warning_index is not None
+
+        return EWSResult(
+            warning_index=warning_index,
+            threshold=float(threshold),
+            times=np.asarray(times, dtype=float),
+            kl_rate=np.asarray(kl, dtype=float),
+            geodesic_acceleration=np.asarray(ga, dtype=float),
+            triggered=triggered,
+        )

@@ -18,3 +18,8 @@ def plot_indicator(time: np.ndarray, indicator: np.ndarray, title: str = "Indica
     fig.tight_layout()
     return fig
 
+
+def plot_ews(time: np.ndarray, indicator: np.ndarray, title: str = "Early warning signal") -> plt.Figure:
+    """Plot an EWS time series (notebook-friendly alias)."""
+    return plot_indicator(time, indicator, title=title)
+
