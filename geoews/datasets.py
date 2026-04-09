@@ -6,6 +6,8 @@ from typing import Any
 
 import numpy as np
 
+__all__ = ["load_ngrip", "load_peter_lake"]
+
 # Defaults aligned with validated research ``config.py`` / NGRIP pipeline.
 NGRIP_AGE_MIN_B2K = 30_000.0
 NGRIP_AGE_MAX_B2K = 50_000.0
@@ -29,12 +31,12 @@ def _find_first_matching_column(df, candidates: tuple[str, ...]) -> str:
     for cand in candidates:
         key = str(cand).strip().lower()
         if key in cols_lc:
-            return cols_lc[key]
+            return str(cols_lc[key])
     for cand in candidates:
         sub = str(cand).strip().lower()
         for k, orig in cols_lc.items():
             if sub in k:
-                return orig
+                return str(orig)
     raise KeyError(f"No column matching {candidates} in {list(df.columns)}")
 
 
@@ -81,7 +83,7 @@ def load_ngrip(
     def pick_age_col() -> str:
         for key, orig in cols_lc.items():
             if "gicc05" in key and "age" in key:
-                return orig
+                return str(orig)
         return _find_first_matching_column(
             df,
             ("gicc05 age (yr b2k)", "gicc05 age", "age (b2k)", "age_b2k", "age"),
@@ -90,7 +92,7 @@ def load_ngrip(
     def pick_d18_col() -> str:
         for key, orig in cols_lc.items():
             if "delta" in key and "18" in key:
-                return orig
+                return str(orig)
         return _find_first_matching_column(
             df,
             ("delta o18 (permil)", "delta18o", "d18o", "δ18o", "delta18o", "d18o"),
@@ -161,7 +163,7 @@ def load_ngrip(
 
 
 def _resample_daily_linear(series: Any) -> Any:
-    pd = _require_pandas()
+    _require_pandas()
     s = series.sort_index()
     daily = s.asfreq("D")
     return daily.interpolate(method="time").astype(float)

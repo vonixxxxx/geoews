@@ -3,23 +3,50 @@
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.ndimage import uniform_filter1d
 
 from .manifold import _step_distances
 
+__all__ = [
+    "fisher_rao_distance",
+    "kl_divergence_rate",
+    "kl_rate",
+    "geodesic_acceleration",
+]
 
-def kl_divergence_rate(mus: np.ndarray, sigmas: np.ndarray) -> np.ndarray:
+
+def kl_divergence_rate(
+    mus: NDArray[np.float64],
+    sigmas: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """KL divergence rate between consecutive sliding-window Gaussians.
+
+    Computes ``D_KL(p_t || p_{t-1})`` for each pair of consecutive windows.
+    For univariate Gaussian windows:
+
+    ``KL = 0.5 * (v_t/v_{t-1} + dmu^2/v_{t-1} - 1 + log(v_{t-1}/v_t))``
+
+    For multivariate Gaussian windows:
+
+    ``KL = 0.5 * (tr(S_{t-1}^{-1} S_t) + dmu^T S_{t-1}^{-1} dmu - d + logdet(S_{t-1}) - logdet(S_t))``
+
+    Parameters
+    ----------
+    mus : ndarray
+        Sliding-window means. Shape ``(T,)`` for univariate or ``(T, d)``
+        for multivariate.
+    sigmas : ndarray
+        Sliding-window variance/covariance series. Shape ``(T,)`` for
+        univariate or ``(T, d, d)`` for multivariate.
+
+    Returns
+    -------
+    ndarray of shape (T,)
+        KL rate series. Index 0 is zero. Values are clipped to be non-negative.
     """
-    KL(p_t || p_{t-1}) between consecutive sliding-window Gaussians.
-
-    Univariate:
-        KL = 0.5 * (s2_t/s2_{t-1} + dmu^2/s2_{t-1} - 1 + ln(s2_{t-1}/s2_t))
-
-    Multivariate:
-        KL = 0.5 * (tr(S_{t-1}^{-1} S_t) + dmu^T S_{t-1}^{-1} dmu - d + ln det(S_{t-1}/S_t))
-    """
-    mus = np.asarray(mus)
-    sigmas = np.asarray(sigmas)
+    mus = np.asarray(mus, dtype=float)
+    sigmas = np.asarray(sigmas, dtype=float)
     t_len = len(mus)
     univariate = sigmas.ndim == 1
 
@@ -52,7 +79,28 @@ def kl_divergence_rate(mus: np.ndarray, sigmas: np.ndarray) -> np.ndarray:
 kl_rate = kl_divergence_rate
 
 
-def _rolling_sum(arr: np.ndarray, window: int) -> np.ndarray:
+def fisher_rao_distance(
+    mus: NDArray[np.float64],
+    sigmas: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    """Fisher-Rao step distances between consecutive windows.
+
+    Parameters
+    ----------
+    mus : ndarray
+        Sliding-window means. Shape (T,) or (T, d).
+    sigmas : ndarray
+        Sliding-window variance/covariance sequence. Shape (T,) or (T, d, d).
+
+    Returns
+    -------
+    ndarray of shape (T,)
+        Fisher-Rao step-distance series. Index 0 equals zero.
+    """
+    return _step_distances(np.asarray(mus, dtype=float), np.asarray(sigmas, dtype=float))
+
+
+def _rolling_sum(arr: NDArray[np.float64], window: int) -> NDArray[np.float64]:
     """Efficient rolling sum using cumulative sum."""
     t_len = len(arr)
     cs = np.cumsum(arr)
@@ -63,15 +111,35 @@ def _rolling_sum(arr: np.ndarray, window: int) -> np.ndarray:
     return result
 
 
-def geodesic_acceleration(mus: np.ndarray, sigmas: np.ndarray, cumul_window: int = 30) -> np.ndarray:
-    """
-    Cumulative positive acceleration along the geodesic.
+def geodesic_acceleration(
+    mus: NDArray[np.float64],
+    sigmas: NDArray[np.float64],
+    cumul_window: int = 30,
+) -> NDArray[np.float64]:
+    """Cumulative geodesic acceleration indicator.
 
-    velocity(t) = d_FR(p_{t-1}, p_t)
-    acceleration(t) = velocity(t) - velocity(t-1)
-    indicator(t) = rolling sum over max(acceleration, 0), with slight penalty on negatives.
+    Defines Fisher-Rao step distances as the manifold velocity and uses
+    first differences to approximate acceleration. The acceleration is
+    smoothed and accumulated in a rolling window.
+
+    Parameters
+    ----------
+    mus : ndarray
+        Sliding-window means. Shape ``(T,)`` or ``(T, d)``.
+    sigmas : ndarray
+        Sliding-window variance/covariance sequence. Shape ``(T,)`` or
+        ``(T, d, d)``.
+    cumul_window : int, default=30
+        Rolling accumulation window for the acceleration signal.
+
+    Returns
+    -------
+    ndarray of shape (T,)
+        Geodesic acceleration series.
     """
-    velocity = _step_distances(np.asarray(mus), np.asarray(sigmas))
+    if cumul_window <= 0:
+        raise ValueError("cumul_window must be positive.")
+    velocity = _step_distances(np.asarray(mus, dtype=float), np.asarray(sigmas, dtype=float))
     accel = np.zeros_like(velocity)
     accel[1:] = velocity[1:] - velocity[:-1]
     smooth_accel = uniform_filter1d(accel, size=5, mode="nearest")

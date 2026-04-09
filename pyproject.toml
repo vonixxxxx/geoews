@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geoews"
-version = "0.1.1"
+dynamic = ["version"]
 description = "Information-geometric early warning signals: KL rate, Fisher–Rao geometry, geodesic acceleration."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,9 +34,12 @@ dependencies = [
 Homepage = "https://github.com/vonixxxxx/geoews"
 Repository = "https://github.com/vonixxxxx/geoews"
 Issues = "https://github.com/vonixxxxx/geoews/issues"
+Documentation = "https://geoews.readthedocs.io/"
+Changelog = "https://github.com/vonixxxxx/geoews/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["pytest", "build", "twine", "jupyter"]
+dev = ["pytest", "pytest-cov", "build", "twine", "jupyter", "ruff", "mypy"]
+docs = ["sphinx", "sphinx-rtd-theme", "numpydoc", "myst-parser", "sphinx-copybutton"]
 
 [tool.setuptools]
 include-package-data = true
@@ -44,3 +47,30 @@ include-package-data = true
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["geoews*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "geoews._version.__version__"}
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "NPY"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["E501", "I001"]
+"docs/conf.py" = ["D100"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["pandas.*", "scipy.*", "statsmodels.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--cov=geoews --cov-report=term-missing"

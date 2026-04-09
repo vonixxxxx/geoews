@@ -3,41 +3,55 @@
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import NDArray
 
 # Canonical value extracted from config.py in source repository.
-COVARIANCE_REGULARIZATION = 1e-6
+COVARIANCE_REGULARIZATION: float = 1e-6
+
+__all__ = ["COVARIANCE_REGULARIZATION", "estimate_gaussian_params"]
 
 
 def estimate_gaussian_params(
-    x: np.ndarray, window_size: int, step: int = 1, regularization: float | None = None
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    x: NDArray[np.float64],
+    window_size: int,
+    step: int = 1,
+    regularization: float = COVARIANCE_REGULARIZATION,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Estimate Gaussian parameters (mean, covariance) in sliding windows.
 
     Parameters
     ----------
-    x:
+    x : ndarray of shape (T,) or (T, d)
         Time series. Shape (T,) for univariate or (T, d) for multivariate.
-    window_size:
+    window_size : int
         Number of data points per window.
-    step:
+    step : int, default=1
         Step size between consecutive windows.
+    regularization : float, default=1e-6
+        Diagonal ridge added to variance/covariance for numerical stability.
 
     Returns
     -------
-    times:
+    times : ndarray of shape (n_windows,)
         Center time index of each window, shape (n_windows,).
-    mus:
+    mus : ndarray
         Estimated mean at each window. Shape (n_windows,) for univariate
         and (n_windows, d) for multivariate.
-    sigmas:
+    sigmas : ndarray
         Estimated variance/covariance. For univariate: shape (n_windows,).
         For multivariate: shape (n_windows, d, d).
     """
-    if x.ndim == 1:
-        x = x.reshape(-1, 1)
+    if window_size <= 1:
+        raise ValueError("window_size must be > 1 for ddof=1 variance/covariance.")
+    if step <= 0:
+        raise ValueError("step must be a positive integer.")
 
-    t_len, d = x.shape
+    x_arr = np.asarray(x, dtype=float)
+    if x_arr.ndim == 1:
+        x_arr = x_arr.reshape(-1, 1)
+
+    t_len, d = x_arr.shape
     n_windows = (t_len - window_size) // step
     if n_windows <= 0:
         raise ValueError("Not enough data for at least one sliding window.")
@@ -50,12 +64,12 @@ def estimate_gaussian_params(
     else:
         sigmas = np.zeros((n_windows, d, d), dtype=float)
 
-    reg = float(COVARIANCE_REGULARIZATION if regularization is None else regularization)
+    reg = float(regularization)
 
     for i in range(n_windows):
         t_start = i * step
         t_end = t_start + window_size
-        window = x[t_start:t_end]
+        window = x_arr[t_start:t_end]
 
         times[i] = 0.5 * (t_start + t_end)
         mus[i] = np.mean(window, axis=0)

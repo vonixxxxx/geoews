@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import NDArray
 
+__all__ = [
+    "rolling_variance",
+    "rolling_lag1_autocorrelation",
+    "variance_ews",
+    "acf_ews",
+]
 
-def rolling_variance(x: np.ndarray, window_size: int, step: int = 1) -> tuple[np.ndarray, np.ndarray]:
+def rolling_variance(
+    x: NDArray[np.float64],
+    window_size: int,
+    step: int = 1,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Compute rolling variance as a classical early-warning signal."""
     s = np.asarray(x, dtype=float).ravel()
     n = len(s)
     n_windows = (n - window_size) // step
@@ -23,8 +35,10 @@ def rolling_variance(x: np.ndarray, window_size: int, step: int = 1) -> tuple[np
 
 
 def rolling_lag1_autocorrelation(
-    x: np.ndarray, window_size: int, step: int = 1
-) -> tuple[np.ndarray, np.ndarray]:
+    x: NDArray[np.float64],
+    window_size: int,
+    step: int = 1,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Rolling lag-1 autocorrelation (Dakos-style early warning benchmark)."""
     s = np.asarray(x, dtype=float).ravel()
     n = len(s)
@@ -49,12 +63,16 @@ def rolling_lag1_autocorrelation(
     return times, acf
 
 
-def variance_ews(x: np.ndarray, window: int, step: int = 1) -> tuple[np.ndarray, np.ndarray]:
+def variance_ews(
+    x: NDArray[np.float64], window: int, step: int = 1
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Rolling variance series for classical EWS comparison."""
     return rolling_variance(x, window_size=window, step=step)
 
 
-def acf_ews(x: np.ndarray, window: int, step: int = 1) -> tuple[np.ndarray, np.ndarray]:
+def acf_ews(
+    x: NDArray[np.float64], window: int, step: int = 1
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Rolling lag-1 ACF series for classical EWS comparison."""
     return rolling_lag1_autocorrelation(x, window_size=window, step=step)
 

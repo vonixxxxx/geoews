@@ -1,20 +1,26 @@
-from .manifold import ManifoldEWS, EWSResult
-from .indicators import kl_rate, geodesic_acceleration
-from .benchmarks import variance_ews, acf_ews
-from .datasets import load_ngrip, load_peter_lake
-from .plot import plot_ews
+"""geoews: Information-geometric early warning signals for critical transitions."""
 
-__version__ = "0.1.1"
-__author__ = "Alexander Sokol"
+from geoews._version import __version__
+from geoews.classical import acf_ews, variance_ews
+from geoews.core import EWSResult, ManifoldEWS
+from geoews.indicators import (
+    fisher_rao_distance,
+    geodesic_acceleration,
+    kl_divergence_rate,
+    kl_rate,
+)
+from geoews.windows import COVARIANCE_REGULARIZATION, estimate_gaussian_params
 
 __all__ = [
     "ManifoldEWS",
     "EWSResult",
-    "kl_rate",
-    "geodesic_acceleration",
     "variance_ews",
     "acf_ews",
-    "load_ngrip",
-    "load_peter_lake",
-    "plot_ews",
+    "kl_rate",
+    "kl_divergence_rate",
+    "fisher_rao_distance",
+    "geodesic_acceleration",
+    "estimate_gaussian_params",
+    "COVARIANCE_REGULARIZATION",
+    "__version__",
 ]
